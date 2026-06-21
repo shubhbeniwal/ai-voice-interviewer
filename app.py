@@ -16,6 +16,19 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown("""
+<style>
+button {
+    border-radius: 10px !important;
+}
+
+button[kind="secondary"] {
+    border: 1px solid #4a4a4a !important;
+    padding: 0.5rem 1rem !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 # ---------------- SESSION STATE INIT ----------------
 if "questions" not in st.session_state:
@@ -41,12 +54,9 @@ if "history" not in st.session_state:
 
 if "pending_speech" not in st.session_state:
     st.session_state.pending_speech = None
-    
-if "last_audio_hash" not in st.session_state:
-    st.session_state.last_audio_hash = None
 
-if "processing_audio" not in st.session_state:
-    st.session_state.processing_audio = False
+if "answer_key" not in st.session_state:
+    st.session_state.answer_key = 0
 
 
 MAX_QUESTIONS = 5
@@ -132,12 +142,30 @@ difficulty = st.selectbox(
     ["Easy", "Medium", "Hard"]
 )
 
+company = st.selectbox(
+    "Target Company",
+    [
+        "General",
+        "Google",
+        "Amazon",
+        "Microsoft",
+        "Meta",
+        "Netflix",
+        "Apple"
+    ]
+)
+
 
 # ---------------- GENERATE QUESTION ----------------
 if st.button("Generate Question"):
 
     with st.spinner("Generating question..."):
-        question = generate_question(role, difficulty)
+        question = generate_question(
+            role,
+            difficulty,
+            company,
+            st.session_state.questions
+        )
 
     st.session_state.current_question = question
     st.session_state.questions.append(question)
@@ -161,36 +189,38 @@ if st.session_state.current_question:
         key=f"mic_{len(st.session_state.answers)}"
     )
 
-    audio_hash = len(audio["bytes"]) if audio else None
 
-    # ---------------- SPEECH TO TEXT (FIXED LOOP ISSUE) ----------------
-    if (
-        audio
-        and audio_hash != st.session_state.last_audio_hash
-        and not st.session_state.processing_audio
-    ):
+# ---------------- SPEECH TO TEXT ----------------
+    if audio is not None and isinstance(audio, dict) and "bytes" in audio:
 
-        st.session_state.processing_audio = True
-        st.session_state.last_audio_hash = audio_hash
+        try:
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio:
-            temp_audio.write(audio["bytes"])
-            audio_path = temp_audio.name
+            with tempfile.NamedTemporaryFile(
+                delete=False,
+                suffix=".webm"
+            ) as temp_audio:
 
-        with st.spinner("Transcribing audio..."):
-            spoken_text = transcribe_audio(audio_path)
+                temp_audio.write(audio["bytes"])
+                audio_path = temp_audio.name
 
-        st.session_state.voice_text = spoken_text
+            with st.spinner("Transcribing audio..."):
+                spoken_text = transcribe_audio(audio_path)
 
-        st.session_state.processing_audio = False
-        st.rerun()
+            st.success("🎤 Voice converted to text!")
 
+            st.session_state.voice_text = spoken_text
+
+            st.session_state[
+                f"answer_text_{st.session_state.answer_key}"
+            ] = spoken_text
+
+        except Exception as e:
+            st.error(f"Transcription Error: {e}")
     # ---------------- ANSWER INPUT ----------------
     answer = st.text_area(
         "Your Answer",
-        value=st.session_state.voice_text,
         height=150,
-        key=f"answer_{len(st.session_state.answers)}"
+        key=f"answer_text_{st.session_state.answer_key}"
     )
 
     # ---------------- NEXT QUESTION ----------------
@@ -215,17 +245,26 @@ if st.session_state.current_question:
                 "evaluation": evaluation,
                 "score": score
             })
-
+            
             # reset input cleanly
-            st.session_state.voice_text = ""
+            pass
 
             # NEXT QUESTION LOGIC
             if len(st.session_state.answers) < MAX_QUESTIONS:
 
                 with st.spinner("Generating next question..."):
-                    next_question = generate_question(role, difficulty)
+                    next_question = generate_question(
+                        role,
+                        difficulty,
+                        company,
+                        st.session_state.questions
+                    )
+                    st.write("NEW QUESTION:", next_question)
 
+                st.success(next_question)
                 st.session_state.current_question = next_question
+                st.session_state.questions.append(next_question)
+                st.session_state.answer_key += 1
 
                 # FIX: queue speech instead of direct speak()
                 st.session_state.pending_speech = next_question

@@ -8,19 +8,32 @@ client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
 )
 
-def generate_question(role, difficulty):
+def generate_question(
+    role,
+    difficulty,
+    company,
+    previous_questions
+):
 
     prompt = f"""
 You are a professional technical interviewer.
 
+Target Company: {company}
 Role: {role}
 Difficulty: {difficulty}
 
+Previous Questions:
+{chr(10).join(previous_questions)}
+
 Generate ONE interview question only.
 
-Do not provide answers.
-Do not provide explanations.
-Return only the question.
+Rules:
+- Do NOT repeat previous questions.
+- Ask a realistic interview question.
+- Match the style of {company} interviews.
+- Do NOT provide answers.
+- Do NOT provide explanations.
+- Return only the question.
 """
 
     response = client.chat.completions.create(
@@ -32,5 +45,7 @@ Return only the question.
             }
         ]
     )
+    
+    
 
     return response.choices[0].message.content
