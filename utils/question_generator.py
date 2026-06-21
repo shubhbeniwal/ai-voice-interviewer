@@ -12,7 +12,8 @@ def generate_question(
     role,
     difficulty,
     company,
-    previous_questions
+    previous_questions,
+    resume_text=""
 ):
 
     prompt = f"""
@@ -22,17 +23,18 @@ Target Company: {company}
 Role: {role}
 Difficulty: {difficulty}
 
+Candidate Resume:
+{resume_text}
+
 Previous Questions:
 {chr(10).join(previous_questions)}
 
-Generate ONE interview question only.
-
 Rules:
-- Do NOT repeat previous questions.
-- Ask a realistic interview question.
-- Match the style of {company} interviews.
-- Do NOT provide answers.
-- Do NOT provide explanations.
+
+- Prefer asking questions about the candidate's projects.
+- Prefer asking questions about the candidate's skills.
+- Do not repeat previous questions.
+- Ask only one question.
 - Return only the question.
 """
 

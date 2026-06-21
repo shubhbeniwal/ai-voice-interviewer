@@ -24,18 +24,21 @@ Candidate Answer:
 
 Evaluate the answer.
 
-Return in this format exactly:
+Return EXACTLY in this format:
 
-Score: X
+Technical Knowledge: X/10
+Communication: X/10
+Problem Solving: X/10
+Confidence: X/10
+Overall Score: X/10
 
 Strengths:
-- ...
+- point 1
+- point 2
 
-Weaknesses:
-- ...
-
-Improvement:
-- ...
+Improvements:
+- point 1
+- point 2
 """
 
     response = client.chat.completions.create(

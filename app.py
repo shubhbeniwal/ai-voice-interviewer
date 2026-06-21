@@ -7,6 +7,7 @@ from utils.evaluator import evaluate_answer
 from streamlit_mic_recorder import mic_recorder
 from utils.speech_to_text import transcribe_audio
 from utils.text_to_speech import speak
+from utils.pdf_report import generate_pdf_report
 
 
 # ---------------- PAGE CONFIG ----------------
@@ -46,6 +47,18 @@ if "evaluations" not in st.session_state:
 if "scores" not in st.session_state:
     st.session_state.scores = []
 
+if "technical_scores" not in st.session_state:
+    st.session_state.technical_scores = []
+
+if "communication_scores" not in st.session_state:
+    st.session_state.communication_scores = []
+
+if "problem_solving_scores" not in st.session_state:
+    st.session_state.problem_solving_scores = []
+
+if "confidence_scores" not in st.session_state:
+    st.session_state.confidence_scores = []
+    
 if "voice_text" not in st.session_state:
     st.session_state.voice_text = ""
 
@@ -64,20 +77,50 @@ MAX_QUESTIONS = 5
 
 # ---------------- SCORE EXTRACTION ----------------
 def extract_score(text):
-    match = re.search(r"Score:\s*(\d+)", text)
+    match = re.search(
+        r"Overall Score:\s*(\d+)",
+        text
+    )
     return int(match.group(1)) if match else 0
+
+def get_metric(text, metric):
+
+        match = re.search(
+            rf"{metric}:\s*(\d+)",
+            text
+        )
+
+        if match:
+            return int(match.group(1))
+
+        return 0
 
 
 # ---------------- SIDEBAR ----------------
-st.sidebar.title("🚀 About the Creator")
-
 st.sidebar.markdown("""
+# 🚀 About the Creator
+
 ### Shubh Beniwal
 
-AI Engineer | Software Developer  
-VIT Chennai Graduate  
+AI Engineer | Software Developer
 
-Passionate about AI, LLMs, NLP, and Software Engineering
+VIT Chennai Graduate
+
+Passionate about:
+- Artificial Intelligence
+- Large Language Models
+- NLP
+- Software Engineering
+
+📍 Bengaluru, Karnataka
+
+📧 beniwal.shubh2003@gmail.com
+
+🔗 LinkedIn:
+https://www.linkedin.com/in/shubh-beniwal/
+
+💻 GitHub:
+https://github.com/shubhbeniwal
 """)
 
 st.sidebar.markdown("---")
@@ -102,8 +145,28 @@ if st.session_state.get("scores"):
 st.markdown("""
 # 🎤 AI Voice Interviewer
 
-Practice realistic AI-powered interviews with voice interaction, speech-to-text, and performance analytics.
+### Practice Real AI Interviews with Voice Interaction
+
+Get company-specific interview questions, answer using your voice, receive AI-powered feedback, and track your interview performance.
+
+---
+
+✅ Voice-Based Interviews
+
+✅ Resume-Aware Question Generation
+
+✅ Company-Specific Mock Interviews
+
+✅ Real-Time AI Evaluation
+
+✅ Downloadable PDF Reports
+
+---
 """)
+
+st.info(
+    "🚀 Powered by Groq + Llama 3.3 + Whisper AI"
+)
 
 
 # ---------------- PROGRESS ----------------
@@ -155,6 +218,20 @@ company = st.selectbox(
     ]
 )
 
+uploaded_resume = st.file_uploader(
+    "📄 Upload Resume (Optional)",
+    type=["pdf"]
+)
+
+from utils.resume_parser import extract_resume_text
+
+resume_text = ""
+
+if uploaded_resume:
+
+    resume_text = extract_resume_text(
+        uploaded_resume
+    )
 
 # ---------------- GENERATE QUESTION ----------------
 if st.button("Generate Question"):
@@ -164,6 +241,7 @@ if st.button("Generate Question"):
             role,
             difficulty,
             company,
+            resume_text,
             st.session_state.questions
         )
 
@@ -232,6 +310,42 @@ if st.session_state.current_question:
                 st.session_state.current_question,
                 answer
             )
+            
+            technical = get_metric(
+                evaluation,
+                "Technical Knowledge"
+            )
+
+            communication = get_metric(
+                evaluation,
+                "Communication"
+            )
+
+            problem_solving = get_metric(
+                evaluation,
+                "Problem Solving"
+            )
+
+            confidence = get_metric(
+                evaluation,
+                "Confidence"
+            )
+            
+            st.session_state.technical_scores.append(
+                technical
+            )
+
+            st.session_state.communication_scores.append(
+                communication
+            )
+
+            st.session_state.problem_solving_scores.append(
+                problem_solving
+            )
+
+            st.session_state.confidence_scores.append(
+                confidence
+            )
 
             st.session_state.answers.append(answer)
             st.session_state.evaluations.append(evaluation)
@@ -257,9 +371,9 @@ if st.session_state.current_question:
                         role,
                         difficulty,
                         company,
+                        resume_text,
                         st.session_state.questions
                     )
-                    st.write("NEW QUESTION:", next_question)
 
                 st.success(next_question)
                 st.session_state.current_question = next_question
@@ -299,12 +413,132 @@ if len(st.session_state.answers) >= MAX_QUESTIONS:
     )
 
     st.write(f"Best Score: {max(st.session_state.scores)}")
+    
+    pdf_file = f"{company}_{role}_Interview_Report.pdf"
 
+    generate_pdf_report(
+        pdf_file,
+        role,
+        company,
+        difficulty,
+        st.session_state.history,
+        round(
+            sum(st.session_state.scores)
+            /
+            len(st.session_state.scores),
+            2
+        ),
+        max(st.session_state.scores)
+    )
+
+    with open(pdf_file, "rb") as file:
+
+        st.download_button(
+            label="📄 Download PDF Report",
+            data=file,
+            file_name=pdf_file,
+            mime="application/pdf"
+        )
+        
+        # ---------------- REPORT GENERATION ----------------
+
+    report_text = f"""
+AI VOICE INTERVIEW REPORT
+
+Role: {role}
+Company: {company}
+Difficulty: {difficulty}
+
+========================================
+"""
+
+    for i, item in enumerate(st.session_state.history, start=1):
+
+        report_text += f"""
+
+Question {i}
+----------------------------------------
+
+Question:
+{item['question']}
+
+Answer:
+{item['answer']}
+
+Evaluation:
+{item['evaluation']}
+
+Score:
+{item['score']}
+"""
+
+    report_text += f"""
+
+========================================
+
+FINAL SUMMARY
+
+Total Questions:
+{MAX_QUESTIONS}
+
+Average Score:
+{round(sum(st.session_state.scores) / len(st.session_state.scores), 2)}
+
+Best Score:
+{max(st.session_state.scores)}
+
+========================================
+"""
 
 # ---------------- DASHBOARD ----------------
 st.markdown("---")
 st.header("📊 Performance Dashboard")
+st.markdown("---")
+st.header("📈 Interview Analytics")
+if st.session_state.technical_scores:
 
+    avg_technical = round(
+        sum(st.session_state.technical_scores)
+        /
+        len(st.session_state.technical_scores),
+        2
+    )
+
+    avg_communication = round(
+        sum(st.session_state.communication_scores)
+        /
+        len(st.session_state.communication_scores),
+        2
+    )
+
+    avg_problem_solving = round(
+        sum(st.session_state.problem_solving_scores)
+        /
+        len(st.session_state.problem_solving_scores),
+        2
+    )
+
+    avg_confidence = round(
+        sum(st.session_state.confidence_scores)
+        /
+        len(st.session_state.confidence_scores),
+        2
+    )
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("Technical", avg_technical)
+
+    with col2:
+        st.metric("Communication", avg_communication)
+
+    with col3:
+        st.metric("Problem Solving", avg_problem_solving)
+
+    with col4:
+        st.metric("Confidence", avg_confidence)
+        
 if st.session_state.scores:
 
     col1, col2, col3 = st.columns(3)
@@ -346,7 +580,7 @@ if st.session_state.scores:
             st.markdown("---")
 
             st.caption(
-                "Built with Streamlit, Whisper, Groq LLMs and Python"
+                "🚀 About the Creator — Shubh Beniwal, AI Engineer | Software Developer, VIT Chennai Graduate | Passionate about AI, LLMs, NLP, and Software Engineering."
             )
 
 
