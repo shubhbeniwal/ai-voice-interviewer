@@ -143,7 +143,7 @@ if st.session_state.get("scores"):
 
 # ---------------- HEADER ----------------
 st.markdown("""
-# 🎤 AI Voice Interviewer
+# 🎤 InterviewAI – Voice-Powered AI Mock Interview Platform
 
 ### Practice Real AI Interviews with Voice Interaction
 
