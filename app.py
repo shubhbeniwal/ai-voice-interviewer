@@ -12,7 +12,7 @@ from utils.pdf_report import generate_pdf_report
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="AI Voice Interviewer",
+    page_title="InterviewAI – Voice-Powered AI Mock Interview Platform",
     page_icon="🎤",
     layout="wide"
 )
