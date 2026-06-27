@@ -1,4 +1,4 @@
-# 🎤 AI Voice Interviewer
+# 🎤 InterviewAI – Voice-Powered AI Mock Interview Platform
 
 An AI-powered mock interview platform that simulates realistic technical interviews using Large Language Models (LLMs), voice interaction, resume-based questioning, and performance analytics.
 
