@@ -4,6 +4,9 @@ An AI-powered mock interview platform that simulates realistic technical intervi
 
 Built to help students, software engineers, and AI professionals prepare for technical interviews through personalized, company-specific interview experiences.
 
+---
+## Screenshots 
+
 <img width="482" height="419" alt="image" src="https://github.com/user-attachments/assets/a24b8af4-dd71-455c-bfbb-1c6f4a3c0509" />
 <img width="702" height="391" alt="image" src="https://github.com/user-attachments/assets/d75e4231-f708-462b-ab6d-b6af3edb14c6" />
 <img width="869" height="347" alt="image" src="https://github.com/user-attachments/assets/ff6f8e59-3335-4029-a143-a80d9cbbabb0" />
